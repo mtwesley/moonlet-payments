@@ -1,6 +1,6 @@
 {
-  "name": "functions",
-  "description": "Cloud Functions for Firebase",
+  "name": "moonlet-payments-functions",
+  "description": "Cloud Functions for Moonlet Payments",
   "scripts": {
     "lint": "eslint .",
     "serve": "firebase emulators:start --only functions",

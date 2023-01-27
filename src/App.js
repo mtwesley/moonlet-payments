@@ -1,29 +1,24 @@
-import React from "react";
+import React, { useEffect } from "react";
 
-import { Container } from "react-bootstrap";
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { Container, Image, Nav, NavDropdown, Row, Col } from "react-bootstrap";
+import { Outlet, Navigate, useNavigate } from "react-router-dom";
 
-import Payment from "./Payment";
-import Auth from "./Auth";
-import { AuthProvider } from "./AuthContext";
+import { useAuthContext } from "./AuthContext";
+import { Login } from "./Auth";
+import Header from "./Header";
 
 function App() {
-  const router = createBrowserRouter([
-    {
-      path: "login/:confirmType?",
-      element: <Auth />,
-    },
-    {
-      path: "/:paymentId?",
-      element: <Payment />,
-    },
-  ]);
+  const { user } = useAuthContext();
+  const navigate = useNavigate();
+
+  // useEffect(() => {
+  //   if (!user) navigate("/login");
+  // }, [user, navigate]);
 
   return (
     <Container id="app">
-      <AuthProvider>
-        <RouterProvider router={router} />
-      </AuthProvider>
+      <Header />
+      {user ? <Outlet /> : <Login />}
     </Container>
   );
 }

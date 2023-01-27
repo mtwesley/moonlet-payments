@@ -1,9 +1,14 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    match /payments/{payment} {
+      allow get: if true;
+      allow write: if request.auth.uid == request.resource.data.userId;
+      allow list: if request.auth.uid == resource.data.userId; 
+    }
+
     match /{document=**} {
-      allow read, write: if
-          request.time < timestamp.date(2023, 2, 18);
+      allow read, write: if false;
     }
   }
 }

@@ -5,53 +5,67 @@ import {
   Accordion,
   Table,
   ListGroup,
+  Form,
   FormCheck,
   Button,
   Image,
+  FloatingLabel,
+  Spinner,
+  InputGroup,
 } from "react-bootstrap";
 
-import { Navigate } from "react-router-dom";
-import React from "react";
+import { Navigate, useNavigate, useParams } from "react-router-dom";
+import { React, useEffect, useState, useCallback } from "react";
+
+import {
+  collection,
+  doc,
+  addDoc,
+  onSnapshot,
+  query,
+  where,
+} from "firebase/firestore";
+import { db } from "./firebase";
 
 import { useAuthContext } from "./AuthContext";
 
-import { dinero, toDecimal } from "dinero.js";
-import { USD } from "@dinero.js/currencies";
+import { dinero, toDecimal, toSnapshot } from "dinero.js";
+import { USD, EUR, GBP } from "@dinero.js/currencies";
 
-const payment = {
-  title: "New Subscription",
-  description: "Payment for increased number of users",
-  instructions: ["Select a payment method"],
-  // method: {
-  //   name: "VISA or Mastercard",
-  //   type: "gtpay",
-  //   description: "Pay with debit or credit VISA or Mastercard",
-  //   redirectUrl: "https://www.gtpay.com/pay",
-  // },
-  // data: {},
-  service: {
-    name: "Subscription",
-    type: "subscription",
-    // description: "",
-    // icon: "",
-    // logo: "",
-  },
-  amount: 60.0,
-  currency: "USD",
-  summary: {
-    items: [
-      { quantity: 2, description: "Service", amount: 20.0 },
-      { quantity: 1, description: "Platform", amount: 5.0 },
-      { quantity: 2, description: "Delivery", amount: 2.5 },
-    ],
-    tax: 5.0,
-    discount: -5.0,
-    fees: 10.0,
-  },
-  reference: "abc123",
-  // values: {},
-  // status: "pending",
-};
+// const payment = {
+//   title: "New Subscription",
+//   description: "Payment for increased number of users",
+//   instructions: ["Select a payment method"],
+//   // method: {
+//   //   name: "VISA or Mastercard",
+//   //   type: "gtpay",
+//   //   description: "Pay with debit or credit VISA or Mastercard",
+//   //   redirectUrl: "https://www.gtpay.com/pay",
+//   // },
+//   // data: {},
+//   service: {
+//     name: "Subscription",
+//     type: "subscription",
+//     // description: "",
+//     // icon: "",
+//     // logo: "",
+//   },
+//   amount: 60.0,
+//   currency: "USD",
+//   summary: {
+//     items: [
+//       { quantity: 2, description: "Service", amount: 20.0 },
+//       { quantity: 1, description: "Platform", amount: 5.0 },
+//       { quantity: 2, description: "Delivery", amount: 2.5 },
+//     ],
+//     tax: 5.0,
+//     discount: -5.0,
+//     fees: 10.0,
+//   },
+//   reference: "abc123",
+//   // values: {},
+//   // status: "pending",
+// };
 
 const methods = [
   {
@@ -82,39 +96,297 @@ const LRD = {
   exponent: 0,
 };
 
+function formatDinero(payment) {
+  return toDecimal(dinero(fromPayment(payment)), ({ value, currency }) =>
+    Number(value).toFixed(currency.exponent)
+  );
+}
+
 function fromPayment({ amount, currency }) {
   switch (currency) {
     case "LRD":
       return {
-        amount: amount,
+        amount: parseInt(amount),
         currency: LRD,
       };
     case "USD":
-    default:
       return {
-        amount: amount * USD.base ** USD.exponent,
+        amount: parseInt(amount * USD.base ** USD.exponent),
         currency: USD,
       };
+    case "EUR":
+      return {
+        amount: parseInt(amount * EUR.base ** EUR.exponent),
+        currency: EUR,
+      };
+    case "GBP":
+      return {
+        amount: parseInt(amount * GBP.base ** GBP.exponent),
+        currency: GBP,
+      };
+    default:
+      return {};
   }
 }
 
-export default function Payment() {
+export function PaymentList() {
   const { user } = useAuthContext();
+  const [loading, setLoading] = useState(true);
+  const [payments, setPayments] = useState([]);
+  const [copiedLinks, setCopiedLinks] = useState([]);
 
-  if (!user) {
-    return <Navigate to="/login" />;
-  }
+  const navigate = useNavigate();
+
+  const handleCopy = (id) => {
+    try {
+      navigator.clipboard.writeText(
+        `${process.env.REACT_APP_ORIGIN}/payment/${id}`
+      );
+      setCopiedLinks([...copiedLinks, id]);
+    } catch (err) {
+      console.error("Failed to copy: ", err);
+    }
+  };
+
+  const handlePayment = (id) => {
+    navigate(`/payment/${id}`);
+  };
+
+  useEffect(() => {
+    return () => {
+      setLoading(true);
+      const q = query(
+        collection(db, "payments"),
+        where("userId", "==", user.uid)
+      );
+      onSnapshot(q, (querySnapshot) => {
+        const payments = [];
+        querySnapshot.forEach((doc) => {
+          payments.push({ id: doc.id, ...doc.data() });
+        });
+        setPayments(payments);
+        setLoading(false);
+      });
+    };
+  }, [user]);
+
+  return loading ? (
+    <Spinner animation="border" className="mx-auto my-auto" />
+  ) : (
+    <>
+      <h2>All Payments</h2>
+      {payments &&
+        payments.map((payment, index) => {
+          return (
+            <Card className="mt-2 mb-2" key={payment.id}>
+              <Card.Body>
+                <Card.Title className="fs-4">{payment.title}</Card.Title>
+                <Card.Subtitle className="text-muted mb-2">
+                  {formatDinero(payment)} {payment.currency}
+                </Card.Subtitle>
+                <Card.Text>{payment.description}</Card.Text>
+                <Card.Text>
+                  <Button
+                    variant="success"
+                    size="sm"
+                    style={{ marginRight: "1em" }}
+                    onClick={() => handlePayment(payment.id)}
+                  >
+                    Pay now
+                  </Button>
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    style={{ marginRight: "1em" }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant={copiedLinks.includes(payment.id) ? "dark" : "info"}
+                    size="sm"
+                    style={{ marginRight: "1em" }}
+                    onClick={() => handleCopy(payment.id)}
+                  >
+                    {copiedLinks.includes(payment.id)
+                      ? "Link copied"
+                      : "Copy link"}
+                  </Button>
+                </Card.Text>
+              </Card.Body>
+            </Card>
+          );
+        })}
+    </>
+  );
+}
+
+export function PaymentCreate() {
+  const { user } = useAuthContext();
+  const navigate = useNavigate();
+
+  const [status, setStatus] = useState("");
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [amount, setAmount] = useState(0.0);
+  const [currency, setCurrency] = useState("USD");
+
+  const handleCreate = async ({ title, description, amount, currency }) => {
+    try {
+      setStatus("pending");
+      console.log(amount, currency);
+      const d = dinero(fromPayment({ amount, currency }));
+      const sn = toSnapshot(d);
+      await addDoc(collection(db, "payments"), {
+        title,
+        description,
+        amount: parseFloat(toDecimal(d)),
+        currency: sn.currency.code,
+        userId: user.uid,
+      });
+      setStatus("success");
+      navigate("/list");
+    } catch (error) {
+      setStatus("error");
+      console.error("Error adding payment: ", error);
+    }
+  };
 
   return (
     <>
-      <Image id="logo" src="images/payments-logo.png" className="mx-10" />
-      <h1>{payment.title}</h1>
+      <h2>New Payment</h2>
+      <FloatingLabel
+        controlId="paymentTitle"
+        label="Title"
+        className="mb-3 mt-3"
+      >
+        <Form.Control
+          type="text"
+          placeholder="Service payment"
+          onChange={(e) => setTitle(e.target.value)}
+          value={title}
+        />
+      </FloatingLabel>
+
+      <FloatingLabel
+        controlId="paymentDescription"
+        label="Description"
+        className="mb-3"
+      >
+        <Form.Control
+          as="textarea"
+          style={{ height: "120px" }}
+          placeholder="Payment for service rendered"
+          onChange={(e) => setDescription(e.target.value)}
+          value={description}
+        />
+      </FloatingLabel>
+
+      <InputGroup className="mb-3">
+        <FloatingLabel controlId="paymentAmount" label="Amount">
+          <Form.Control
+            type="number"
+            placeholder="0.00"
+            onChange={(e) => setAmount(e.target.value)}
+            value={amount}
+          />
+        </FloatingLabel>{" "}
+        <Form.Select
+          type="text"
+          style={{
+            maxWidth: "140px",
+          }}
+          onChange={(e) => setCurrency(e.target.value)}
+          value={currency}
+        >
+          <option value="LRD">LRD</option>
+          <option value="USD">USD</option>
+          <option value="EUR">EUR</option>
+          <option value="GBP">GBP</option>
+        </Form.Select>
+      </InputGroup>
+
+      <Button
+        variant={status === "error" ? "warning" : "info"}
+        className="w-100 fs-4 p-3"
+        onClick={() => handleCreate({ title, description, amount, currency })}
+      >
+        {status === "pending" ? (
+          <>
+            <Spinner
+              as="span"
+              animation="border"
+              size="sm"
+              role="status"
+              aria-hidden="true"
+            />
+            <span className="visually-hidden">Creating...</span>
+          </>
+        ) : status === "success" ? (
+          "Payment Created"
+        ) : status === "error" ? (
+          "Try again"
+        ) : (
+          "Create"
+        )}
+      </Button>
+    </>
+  );
+}
+
+export function Payment() {
+  const { user } = useAuthContext();
+  const navigate = useNavigate();
+  const params = useParams();
+
+  if (!params.paymentId) navigate("/");
+
+  const [payment, setPayment] = useState({});
+  const [loading, setLoading] = useState(true);
+
+  // useEffect(() => {
+  //   return () => {
+  //     setLoading(true);
+  //     const q = query(
+  //       collection(db, "payments"),
+  //       where("userId", "==", user.uid)
+  //     );
+  //     onSnapshot(q, (querySnapshot) => {
+  //       const payments = [];
+  //       querySnapshot.forEach((doc) => {
+  //         payments.push({ id: doc.id, ...doc.data() });
+  //       });
+  //       setPayments(payments);
+  //       setLoading(false);
+  //       console.log("Current payments: ", payments);
+  //     });
+  //   };
+  // }, [user]);
+
+  useEffect(() => {
+    return () => {
+      try {
+        setLoading(true);
+        onSnapshot(doc(db, "payments", params.paymentId), (doc) => {
+          setPayment({ id: doc.id, ...doc.data() });
+          setLoading(false);
+        });
+      } catch (error) {
+        console.log(error);
+      }
+    };
+  }, [params.paymentId]);
+
+  return loading ? (
+    <Spinner animation="border" className="mx-auto my-auto" />
+  ) : (
+    <>
+      <h2>{payment.title}</h2>
       <h5 className="text-muted">{payment.description}</h5>
-      <Card className="bg-primary text-white mt-3">
+      <Card className="bg-dark text-white mt-3">
         <Card.Body>
-          <Card.Subtitle className="text-muted mb-1">Amount Due</Card.Subtitle>
+          <Card.Subtitle className="mb-1 text-muted">Amount Due</Card.Subtitle>
           <h1 className="mb-0 fw-1200">
-            {toDecimal(dinero(fromPayment(payment)))} {payment.currency}
+            {formatDinero(payment)} {payment.currency}
           </h1>
         </Card.Body>
       </Card>
@@ -212,14 +484,10 @@ export default function Payment() {
                       <td className="text-start">Fees</td>
                       <td className="text-end"></td>
                       <td className="text-end">
-                        {toDecimal(
-                          dinero(
-                            fromPayment({
-                              amount: payment.summary.fees,
-                              currency: payment.currency,
-                            })
-                          )
-                        )}
+                        {formatDinero({
+                          amount: payment.summary.fees,
+                          currency: payment.currency,
+                        })}
                       </td>
                     </tr>
                   )}
@@ -229,9 +497,9 @@ export default function Payment() {
           </Accordion.Item>
         </Accordion>
       )}
-      <Card className="mt-3 bg-primary text-white">
+      <Card variant="info" className="mt-3  bg-dark">
         <Card.Body>
-          <Card.Title>Payment method</Card.Title>
+          <Card.Title className="mb-0 text-white">Payment method</Card.Title>
           {/* <Card.Subtitle className="text-muted">
             Select payment method
           </Card.Subtitle> */}
@@ -250,7 +518,7 @@ export default function Payment() {
           ))}
         </ListGroup>
       </Card>
-      <Button variant="success" type="submit" className="w-100 mt-3 fs-4">
+      <Button variant="success" type="submit" className="w-100 mt-3 fs-4 p-3">
         Continue
       </Button>
     </>

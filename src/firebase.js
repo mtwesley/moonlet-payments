@@ -1,5 +1,8 @@
 import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
+import { getAuth, connectAuthEmulator, useDeviceLanguage } from "firebase/auth";
+import { getFirestore, connectFirestoreEmulator } from "firebase/firestore";
+import { getFunctions, connectFunctionsEmulator } from "firebase/functions";
+
 import { getAnalytics } from "firebase/analytics";
 
 const firebaseConfig = {
@@ -17,3 +20,11 @@ export const app = initializeApp(firebaseConfig);
 
 export const analytics = getAnalytics(app);
 export const auth = getAuth(app);
+export const db = getFirestore(app);
+export const functions = getFunctions(app);
+
+auth.settings.appVerificationDisabledForTesting = true;
+
+connectAuthEmulator(auth, "http://localhost:9099");
+connectFirestoreEmulator(db, "localhost", 8080);
+connectFunctionsEmulator(functions, "localhost", 5001);

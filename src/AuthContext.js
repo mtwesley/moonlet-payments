@@ -1,12 +1,5 @@
-import {
-  React,
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  useMemo,
-} from "react";
-import { useIdToken } from "react-firebase-hooks/auth";
+import { React, createContext, useContext, useEffect, useState } from "react";
+import { Spinner } from "react-bootstrap";
 
 import { auth } from "./firebase";
 
@@ -17,20 +10,27 @@ export function useAuthContext() {
 }
 
 export function AuthProvider({ children }) {
-  const [user, loading, error] = useIdToken(auth);
+  const [user, setUser] = useState();
+  const [loading, setLoading] = useState(true);
 
-  const contextValue = useMemo(
-    () => ({
-      user,
-      loading,
-      error,
-    }),
-    [user, loading, error]
-  );
+  useEffect(() => {
+    return () => {
+      setLoading(true);
+      auth.onIdTokenChanged((user) => {
+        // process custom claims
+        setUser(user);
+        setLoading(false);
+      });
+    };
+  }, []);
 
   return (
-    <AuthContext.Provider value={contextValue}>
-      {!loading && children}
+    <AuthContext.Provider value={{ user, loading }}>
+      {loading ? (
+        <Spinner animation="border" className="mx-auto my-auto" />
+      ) : (
+        children
+      )}
     </AuthContext.Provider>
   );
 }

@@ -1,8 +1,19 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import {
+  createBrowserRouter,
+  RouterProvider,
+  Navigate,
+} from "react-router-dom";
 
-import { Login, Logout } from "./Auth";
+import {
+  Auth,
+  AuthCheck,
+  Login,
+  ConfirmEmail,
+  ConfirmPhone,
+  Logout,
+} from "./Auth";
 import { AuthProvider } from "./AuthContext";
 import { Payment, PaymentCreate, PaymentList } from "./Payment";
 import App from "./App";
@@ -12,29 +23,55 @@ import "./index.css";
 
 const router = createBrowserRouter([
   {
-    path: "/",
     element: <App />,
     children: [
       {
-        path: "login/:confirmType?",
-        element: <Login />,
+        path: "login",
+        element: <Auth />,
+        children: [
+          {
+            index: true,
+            element: <Login />,
+          },
+          {
+            path: "email",
+            element: <ConfirmEmail />,
+          },
+          {
+            path: "phone",
+            element: <ConfirmPhone />,
+          },
+        ],
       },
       {
         path: "logout",
         element: <Logout />,
       },
       {
-        path: "new",
-        element: <PaymentCreate />,
+        element: <AuthCheck />,
+        children: [
+          {
+            index: true,
+            element: <Navigate to="/list" />,
+          },
+          {
+            path: "list",
+            element: <PaymentList />,
+          },
+          {
+            path: "new",
+            element: <PaymentCreate />,
+          },
+          {
+            path: "payment/:paymentId?",
+            element: <Payment />,
+          },
+        ],
       },
-      {
-        path: "list",
-        element: <PaymentList />,
-      },
-      {
-        path: "payment/:paymentId?",
-        element: <Payment />,
-      },
+      // {
+      //   element; <AuthCheck />,
+      //   children: []
+      // },
     ],
   },
 ]);

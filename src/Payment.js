@@ -21,6 +21,7 @@ import {
   collection,
   doc,
   addDoc,
+  deleteDoc,
   onSnapshot,
   query,
   where,
@@ -69,7 +70,7 @@ import { USD, EUR, GBP } from "@dinero.js/currencies";
 
 const methods = [
   {
-    name: "MTN Mobile Money",
+    name: "Lonestar MTN Mobile Money",
     type: "lonestar-mtn",
     description: "Pay with Lonestar MTN Mobile Money account",
     redirectUrl: "https://www.lonestarmtn.com/pay",
@@ -133,7 +134,9 @@ export function PaymentList() {
   const { user } = useAuthContext();
   const [loading, setLoading] = useState(true);
   const [payments, setPayments] = useState([]);
+
   const [copiedLinks, setCopiedLinks] = useState([]);
+  const [deleteLinks, setDeleteLinks] = useState([]);
 
   const navigate = useNavigate();
 
@@ -152,22 +155,29 @@ export function PaymentList() {
     navigate(`/payment/${id}`);
   };
 
+  const handleDelete = async (id) => {
+    try {
+      await deleteDoc(doc(db, "payments", id));
+    } catch (error) {
+      console.error("Failed to delete: ", error);
+    }
+    setDeleteLinks(deleteLinks.filter((_id) => _id !== id));
+  };
+
   useEffect(() => {
-    return () => {
-      setLoading(true);
-      const q = query(
-        collection(db, "payments"),
-        where("userId", "==", user.uid)
-      );
-      onSnapshot(q, (querySnapshot) => {
-        const payments = [];
-        querySnapshot.forEach((doc) => {
-          payments.push({ id: doc.id, ...doc.data() });
-        });
-        setPayments(payments);
-        setLoading(false);
+    setLoading(true);
+    const q = query(
+      collection(db, "payments"),
+      where("userId", "==", user.uid)
+    );
+    return onSnapshot(q, (querySnapshot) => {
+      const payments = [];
+      querySnapshot.forEach((doc) => {
+        payments?.push({ id: doc.id, ...doc.data() });
       });
-    };
+      setPayments(payments);
+      setLoading(false);
+    });
   }, [user]);
 
   return loading ? (
@@ -198,9 +208,32 @@ export function PaymentList() {
                     variant="danger"
                     size="sm"
                     style={{ marginRight: "1em" }}
+                    onClick={() => {
+                      if (deleteLinks.includes(payment.id)) {
+                        handleDelete(payment.id);
+                      } else {
+                        setDeleteLinks([...deleteLinks, payment.id]);
+                      }
+                    }}
                   >
-                    Cancel
+                    {deleteLinks.includes(payment.id)
+                      ? "Confirm delete"
+                      : "Delete"}
                   </Button>
+                  {deleteLinks.includes(payment.id) && (
+                    <Button
+                      variant="dark"
+                      size="sm"
+                      style={{ marginRight: "1em" }}
+                      onClick={() =>
+                        setDeleteLinks(
+                          deleteLinks.filter((id) => id !== payment.id)
+                        )
+                      }
+                    >
+                      Cancel
+                    </Button>
+                  )}
                   <Button
                     variant={copiedLinks.includes(payment.id) ? "dark" : "info"}
                     size="sm"
@@ -239,9 +272,15 @@ export function PaymentCreate() {
       await addDoc(collection(db, "payments"), {
         title,
         description,
+        reference: null,
         amount: parseFloat(toDecimal(d)),
         currency: sn.currency.code,
+        summary: null,
         userId: user.uid,
+        paymentUserId: null,
+        data: null,
+        method: null,
+        status: "pending",
       });
       setStatus("success");
       navigate("/list");
@@ -350,7 +389,7 @@ export function Payment() {
   //       collection(db, "payments"),
   //       where("userId", "==", user.uid)
   //     );
-  //     onSnapshot(q, (querySnapshot) => {
+  //     return onSnapshot(q, (querySnapshot) => {
   //       const payments = [];
   //       querySnapshot.forEach((doc) => {
   //         payments.push({ id: doc.id, ...doc.data() });
@@ -363,17 +402,15 @@ export function Payment() {
   // }, [user]);
 
   useEffect(() => {
-    return () => {
+    setLoading(true);
+    return onSnapshot(doc(db, "payments", params.paymentId), (doc) => {
       try {
-        setLoading(true);
-        onSnapshot(doc(db, "payments", params.paymentId), (doc) => {
-          setPayment({ id: doc.id, ...doc.data() });
-          setLoading(false);
-        });
+        setPayment({ id: doc.id, ...doc.data() });
+        setLoading(false);
       } catch (error) {
         console.log(error);
       }
-    };
+    });
   }, [params.paymentId]);
 
   return loading ? (

@@ -4,7 +4,7 @@ import { Container, Image, Nav, NavDropdown, Row, Col } from "react-bootstrap";
 import { Outlet, Navigate, useNavigate } from "react-router-dom";
 
 import { useAuthContext } from "./AuthContext";
-import { Login } from "./Auth";
+import { Auth, Login } from "./Auth";
 import Header from "./Header";
 
 function App() {
@@ -18,7 +18,7 @@ function App() {
   return (
     <Container id="app">
       <Header />
-      {user ? <Outlet /> : <Login />}
+      <Outlet />
     </Container>
   );
 }

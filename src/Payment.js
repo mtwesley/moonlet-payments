@@ -33,41 +33,6 @@ import { useAuthContext } from "./AuthContext";
 import { dinero, toDecimal, toSnapshot } from "dinero.js";
 import { USD, EUR, GBP } from "@dinero.js/currencies";
 
-// const payment = {
-//   title: "New Subscription",
-//   description: "Payment for increased number of users",
-//   instructions: ["Select a payment method"],
-//   // method: {
-//   //   name: "VISA or Mastercard",
-//   //   type: "gtpay",
-//   //   description: "Pay with debit or credit VISA or Mastercard",
-//   //   redirectUrl: "https://www.gtpay.com/pay",
-//   // },
-//   // data: {},
-//   service: {
-//     name: "Subscription",
-//     type: "subscription",
-//     // description: "",
-//     // icon: "",
-//     // logo: "",
-//   },
-//   amount: 60.0,
-//   currency: "USD",
-//   summary: {
-//     items: [
-//       { quantity: 2, description: "Service", amount: 20.0 },
-//       { quantity: 1, description: "Platform", amount: 5.0 },
-//       { quantity: 2, description: "Delivery", amount: 2.5 },
-//     ],
-//     tax: 5.0,
-//     discount: -5.0,
-//     fees: 10.0,
-//   },
-//   reference: "abc123",
-//   // values: {},
-//   // status: "pending",
-// };
-
 const methods = [
   {
     name: "Lonestar MTN Mobile Money",
@@ -181,10 +146,11 @@ export function PaymentList() {
   }, [user]);
 
   return loading ? (
-    <Spinner animation="border" className="mx-auto my-auto" />
+    <></>
   ) : (
+    // <Spinner animation="border" className="mx-auto my-5" />
     <>
-      <h2>All Payments</h2>
+      <h2>{payments.length ? "All Payments" : "No payments"}</h2>
       {payments &&
         payments.map((payment, index) => {
           return (
@@ -382,25 +348,6 @@ export function Payment() {
   const [payment, setPayment] = useState({});
   const [loading, setLoading] = useState(true);
 
-  // useEffect(() => {
-  //   return () => {
-  //     setLoading(true);
-  //     const q = query(
-  //       collection(db, "payments"),
-  //       where("userId", "==", user.uid)
-  //     );
-  //     return onSnapshot(q, (querySnapshot) => {
-  //       const payments = [];
-  //       querySnapshot.forEach((doc) => {
-  //         payments.push({ id: doc.id, ...doc.data() });
-  //       });
-  //       setPayments(payments);
-  //       setLoading(false);
-  //       console.log("Current payments: ", payments);
-  //     });
-  //   };
-  // }, [user]);
-
   useEffect(() => {
     setLoading(true);
     return onSnapshot(doc(db, "payments", params.paymentId), (doc) => {
@@ -414,8 +361,9 @@ export function Payment() {
   }, [params.paymentId]);
 
   return loading ? (
-    <Spinner animation="border" className="mx-auto my-auto" />
+    <></>
   ) : (
+    // <Spinner animation="border" className="mx-auto my-5" />
     <>
       <h2>{payment.title}</h2>
       <h5 className="text-muted">{payment.description}</h5>

@@ -27,7 +27,7 @@ export function AuthProvider({ children }) {
   return (
     <AuthContext.Provider value={{ user, loading }}>
       {loading ? (
-        <Spinner animation="border" className="mx-auto my-auto" />
+        <Spinner animation="border" style={{ margin: "30% 50%" }} />
       ) : (
         children
       )}

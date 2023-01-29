@@ -40,26 +40,37 @@ export function AuthCheck() {
 export function Auth() {
   const { user } = useAuthContext();
   const [confirmation, setConfirmation] = useState();
+  const [recaptchaVerified, setRecaptchaVerified] = useState(false);
 
   if (user) return <Navigate to="/" />;
 
-  return <Outlet context={[confirmation, setConfirmation]} />;
+  return (
+    <Outlet
+      context={[
+        confirmation,
+        setConfirmation,
+        recaptchaVerified,
+        setRecaptchaVerified,
+      ]}
+    />
+  );
 }
 
 export function Login() {
-  // const { user } = useAuthContext();
   const navigate = useNavigate();
 
-  const [confirmation, setConfirmation] = useOutletContext();
   const [authInput, setAuthInput] = useState("");
   const [status, setStatus] = useState("");
-
-  // const [recaptchaVerified, setRecaptchaVerified] = useState(false);
 
   const [phoneCountry, setPhoneCountry] = useState("LR");
   const [isPhoneNumber, setIsPhoneNumber] = useState(false);
 
-  // const { confirmType } = useParams();
+  const [
+    confirmation,
+    setConfirmation,
+    recaptchaVerified,
+    setRecaptchaVerified,
+  ] = useOutletContext();
 
   const getEmoji = (countryCode) => {
     const codePoints = countryCode
@@ -68,10 +79,6 @@ export function Login() {
       .map((char) => 127397 + char.charCodeAt());
     return String.fromCodePoint(...codePoints);
   };
-
-  // useEffect(() => {
-  //   if (user) navigate("/list");
-  // }, [user, navigate]);
 
   useEffect(() => {
     if (authInput.length > 3) {
@@ -96,7 +103,7 @@ export function Login() {
       {
         size: "invisible",
         callback: (response) => {
-          // setRecaptchaVerified(true);
+          setRecaptchaVerified(true);
         },
       },
       auth
@@ -148,17 +155,6 @@ export function Login() {
   useEffect(() => {
     console.log("status", status);
   }, [status]);
-
-  // if (isSignInWithEmailLink(auth, window.location.href))
-  //   return <ConfirmEmail {...{ confirmType }} />;
-
-  // if (phoneConfirmation)
-  //   return (
-  //     <ConfirmPhone
-  //       phoneNumber={parsePhoneNumber(authInput, phoneCountry).number}
-  //       confirmation={phoneConfirmation}
-  //     />
-  //   );
 
   return (
     <>
@@ -261,7 +257,7 @@ export function ConfirmPhone() {
   const [loading, setLoading] = useState(false);
   const [code, setCode] = useState("");
 
-  const [confirmation] = useOutletContext();
+  const [confirmation, recaptchaVerified] = useOutletContext();
 
   const handlePhoneConfirmation = (code) => {
     if (!code) return;
@@ -285,7 +281,7 @@ export function ConfirmPhone() {
   }
 
   return loading ? (
-    <Spinner animation="border" className="mx-auto my-auto" />
+    <Spinner animation="border" className="mx-auto my-5" />
   ) : (
     <>
       <h2>One more step...</h2>
@@ -350,7 +346,7 @@ export function ConfirmEmail() {
     return <Navigate to="/login" />;
 
   return loading ? (
-    <Spinner animation="border" className="mx-auto my-auto" />
+    <Spinner animation="border" className="mx-auto my-5" />
   ) : (
     <>
       <h2>One more step...</h2>

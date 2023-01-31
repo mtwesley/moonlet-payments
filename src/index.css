@@ -21,6 +21,8 @@ td:empty::after{
 
 #logo {
   width: 30%;
+  min-width: 150px;
+  /* max-width: 200px;  */
   height: 30%;
 }
 

@@ -20,6 +20,7 @@ import { isEmail } from "validator";
 
 import { useAuthContext } from "./AuthContext";
 import { auth } from "./firebase";
+import { getEmoji } from "./util";
 
 import {
   isValidNumber,
@@ -40,20 +41,10 @@ export function AuthCheck() {
 export function Auth() {
   const { user } = useAuthContext();
   const [confirmation, setConfirmation] = useState();
-  const [recaptchaVerified, setRecaptchaVerified] = useState(false);
 
   if (user) return <Navigate to="/" />;
 
-  return (
-    <Outlet
-      context={[
-        confirmation,
-        setConfirmation,
-        recaptchaVerified,
-        setRecaptchaVerified,
-      ]}
-    />
-  );
+  return <Outlet context={[confirmation, setConfirmation]} />;
 }
 
 export function Login() {
@@ -65,20 +56,7 @@ export function Login() {
   const [phoneCountry, setPhoneCountry] = useState("LR");
   const [isPhoneNumber, setIsPhoneNumber] = useState(false);
 
-  const [
-    confirmation,
-    setConfirmation,
-    recaptchaVerified,
-    setRecaptchaVerified,
-  ] = useOutletContext();
-
-  const getEmoji = (countryCode) => {
-    const codePoints = countryCode
-      .toUpperCase()
-      .split("")
-      .map((char) => 127397 + char.charCodeAt());
-    return String.fromCodePoint(...codePoints);
-  };
+  const [confirmation, setConfirmation] = useOutletContext();
 
   useEffect(() => {
     if (authInput.length > 3) {
@@ -102,9 +80,7 @@ export function Login() {
       "login-button",
       {
         size: "invisible",
-        callback: (response) => {
-          setRecaptchaVerified(true);
-        },
+        callback: (response) => {},
       },
       auth
     );
@@ -134,8 +110,9 @@ export function Login() {
     } else {
       const email = authInput;
       if (isEmail(email)) {
+        console.log(process.env.PUBLIC_URL);
         sendSignInLinkToEmail(auth, email, {
-          url: `${process.env.REACT_APP_ORIGIN}/login/email`,
+          url: `${window.location.origin}/login/email`,
           handleCodeInApp: true,
         })
           .then(() => {
@@ -151,10 +128,6 @@ export function Login() {
       }
     }
   };
-
-  useEffect(() => {
-    console.log("status", status);
-  }, [status]);
 
   return (
     <>
@@ -197,8 +170,7 @@ export function Login() {
                 paddingLeft: "20px",
               }}
               value={phoneCountry}
-              onChange={(e) => setPhoneCountry(e.target.value)}
-            >
+              onChange={(e) => setPhoneCountry(e.target.value)}>
               {getCountries().map((country) => (
                 <option value={country} key={country}>
                   {`${getEmoji(
@@ -210,8 +182,7 @@ export function Login() {
           </Collapse>
           <FloatingLabel
             label="Email address or phone number"
-            controlId="loginFormInput"
-          >
+            controlId="loginFormInput">
             <Form.Control
               type="input"
               placeholder="yourname@email.com or 0555000000"
@@ -228,8 +199,7 @@ export function Login() {
         variant={status === "error" ? "warning" : "info"}
         className="w-100 mt-3 fs-4 p-3"
         onClick={() => handleLogin(authInput)}
-        disabled={["pending", "success"].includes(status)}
-      >
+        disabled={["pending", "success"].includes(status)}>
         {status === "pending" ? (
           <>
             <Spinner
@@ -257,7 +227,7 @@ export function ConfirmPhone() {
   const [loading, setLoading] = useState(false);
   const [code, setCode] = useState("");
 
-  const [confirmation, recaptchaVerified] = useOutletContext();
+  const [confirmation] = useOutletContext();
 
   const handlePhoneConfirmation = (code) => {
     if (!code) return;
@@ -297,8 +267,7 @@ export function ConfirmPhone() {
       <FloatingLabel
         controlId="confirmPhone"
         label="Verification code"
-        className="mb-3"
-      >
+        className="mb-3">
         <Form.Control
           type="text"
           placeholder="123456"
@@ -310,8 +279,7 @@ export function ConfirmPhone() {
       <Button
         variant="info"
         className="w-100 fs-4 p-3"
-        onClick={() => handlePhoneConfirmation(code)}
-      >
+        onClick={() => handlePhoneConfirmation(code)}>
         Confirm
       </Button>
     </>
@@ -337,10 +305,10 @@ export function ConfirmEmail() {
     }
   };
 
-  useEffect(() => {
-    return () =>
-      handleEmailConfirmation(window.localStorage.getItem("authEmail"));
-  }, []);
+  useEffect(
+    () => handleEmailConfirmation(window.localStorage.getItem("authEmail")),
+    []
+  );
 
   if (!isSignInWithEmailLink(auth, window.location.href))
     return <Navigate to="/login" />;
@@ -355,8 +323,7 @@ export function ConfirmEmail() {
       <FloatingLabel
         controlId="confirmEmail"
         label="Email address"
-        className="mb-3"
-      >
+        className="mb-3">
         <Form.Control
           type="email"
           placeholder="Example: yourname@email.com"
@@ -369,8 +336,7 @@ export function ConfirmEmail() {
       <Button
         variant="info"
         className="w-100 fs-4 p-3"
-        onClick={() => handleEmailConfirmation(email)}
-      >
+        onClick={() => handleEmailConfirmation(email)}>
         Confirm
       </Button>
     </>
@@ -382,8 +348,7 @@ export function Logout() {
   window.localStorage.removeItem("authEmail");
 
   useEffect(() => {
-    auth.signOut();
-    navigate("/");
+    auth.signOut().then(() => navigate("/"));
   }, [navigate]);
 
   return (

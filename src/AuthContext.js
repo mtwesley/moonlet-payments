@@ -12,20 +12,23 @@ export function useAuthContext() {
 export function AuthProvider({ children }) {
   const [user, setUser] = useState();
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    return () => {
-      setLoading(true);
-      auth.onIdTokenChanged((user) => {
-        // process custom claims
-        setUser(user);
-        setLoading(false);
-      });
-    };
+    setLoading(true);
+    return auth.onIdTokenChanged((_user) => {
+      setUser(_user);
+      setLoading(false);
+      if (_user?.uid) {
+        _user.getIdTokenResult().then((idTokenResult) => {
+          setIsAdmin(idTokenResult.claims.admin ?? false);
+        });
+      }
+    });
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading }}>
+    <AuthContext.Provider value={{ user, loading, isAdmin }}>
       {loading ? (
         <Spinner animation="border" style={{ margin: "30% 50%" }} />
       ) : (

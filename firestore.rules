@@ -3,15 +3,29 @@ service cloud.firestore {
   match /databases/{database}/documents {
     match /payments/{payment} {
       allow get: if request.auth.uid != null;
-      allow create: if request.auth.uid == request.resource.data.userId;
-      allow update, delete, list: if request.auth.uid == resource.data.userId;
+      
+      allow list: if request.auth.uid == resource.data.userId || request.auth.uid == resource.data.paymentUserId;
+      
+      allow create: if request.auth.uid == request.resource.data.userId &&
+        request.resource.data.status == 'pending' &&
+        request.resource.data.amount > 0 &&
+        request.resource.data.updatedAt >= request.resource.data.createdAt &&
+        request.resource.data.currency in ['LRD', 'USD', 'EUR', 'GBP'] &&
+        request.resource.data.keys().hasAll(['title', 'description', 'reference', 'amount', 'currency', 'values',
+                                             'summary', 'userId', 'status', 'createdAt', 'updatedAt', 'expiresAt']) &&
+        request.resource.data.method == null && request.resource.data.paymentUserId == null && request.resource.data.values == null;
+      
+      allow update: if resource.data.method == null && 
+        resource.data.paymentUserId == null &&
+        request.auth.uid == request.resource.data.paymentUserId && 
+        request.resource.data.updatedAt >= resource.data.updatedAt &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['paymentUserId', 'method', 'updatedAt']);
+      
+      allow delete: if request.auth.uid == resource.data.userId
     }
 
-    match /payments/{payment} {
-      allow update: if (
-        (request.auth.uid == resource.data.paymentUserId) || resource.data.paymentUserId == null) && 
-        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['paymentUserId', 'method']));
-      allow read, create, delete: if false;
+    match /paymentsData/{payment} {
+      allow read, write: if false;
     }
 
     match /{document=**} {
@@ -19,3 +33,6 @@ service cloud.firestore {
     }
   }
 }
+
+
+// ) || resource.data.paymentUserId == null) && 

@@ -9,11 +9,6 @@ import Header from "./Header";
 
 function App() {
   const { user } = useAuthContext();
-  const navigate = useNavigate();
-
-  // useEffect(() => {
-  //   if (!user) navigate("/login");
-  // }, [user, navigate]);
 
   return (
     <Container id="app">

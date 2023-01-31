@@ -349,7 +349,7 @@ export function PaymentCreate() {
     }
   };
 
-  if (!isAdmin) return <Navigate to="/list" />;
+  // if (!isAdmin) return <Navigate to="/list" />;
 
   return (
     <>

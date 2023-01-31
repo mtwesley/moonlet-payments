@@ -26,14 +26,14 @@ export default function Header() {
             title={<Menu size="medium" className="fs-1" />}
             id="nav-dropdown"
             style={{ marginRight: 0 }}>
-            {isAdmin && (
-              <NavDropdown.Item
-                as={Link}
-                to="/new"
-                className="text-decoration-none">
-                Create payment
-              </NavDropdown.Item>
-            )}
+            {/* {isAdmin && ( */}
+            <NavDropdown.Item
+              as={Link}
+              to="/new"
+              className="text-decoration-none">
+              Create payment
+            </NavDropdown.Item>
+            {/* )} */}
             <NavDropdown.Item
               as={Link}
               to="/list"

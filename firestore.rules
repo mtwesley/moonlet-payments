@@ -13,7 +13,7 @@ service cloud.firestore {
         request.resource.data.currency in ['LRD', 'USD', 'EUR', 'GBP'] &&
         request.resource.data.keys().hasAll(['title', 'description', 'reference', 'amount', 'currency', 'values',
                                              'summary', 'userId', 'status', 'createdAt', 'updatedAt', 'expiresAt']) &&
-        request.resource.data.method == null && request.resource.data.paymentUserId == null && request.resource.data.values == null;
+        request.resource.data.method == null && request.resource.data.paymentUserId == null && request.resource.data.values == {};
       
       allow update: if resource.data.method == null && 
         resource.data.paymentUserId == null &&

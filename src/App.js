@@ -12,6 +12,9 @@ function App() {
     <Container id="app">
       <Header />
       <Outlet />
+      <Row className="justify-content-center m-3 fs-5 text-muted">
+        Made by Moonlet © 2023
+      </Row>
     </Container>
   );
 }

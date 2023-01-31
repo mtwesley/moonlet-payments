@@ -7,7 +7,12 @@ import {
   InputGroup,
   Collapse,
 } from "react-bootstrap";
-import { Navigate, useNavigate, useOutletContext } from "react-router";
+import {
+  Navigate,
+  useLocation,
+  useNavigate,
+  useOutletContext,
+} from "react-router";
 import {
   isSignInWithEmailLink,
   sendSignInLinkToEmail,
@@ -16,6 +21,7 @@ import {
   RecaptchaVerifier,
 } from "firebase/auth";
 import { useParams, Outlet } from "react-router";
+import { useSearchParams } from "react-router-dom";
 import { isEmail } from "validator";
 
 import { useAuthContext } from "./AuthContext";
@@ -32,23 +38,39 @@ import {
 
 export function AuthCheck() {
   const { user } = useAuthContext();
+  const location = useLocation();
 
   if (user) return <Outlet />;
 
-  return <Navigate to="/login" />;
+  return (
+    <Navigate
+      to={`/login?next=${location.pathname}${
+        location.search && "?" + location.search
+      }${location.hash && "#" + location.hash}`}
+    />
+  );
 }
 
 export function Auth() {
   const { user } = useAuthContext();
   const [confirmation, setConfirmation] = useState();
 
-  if (user) return <Navigate to="/" />;
+  const [searchParams] = useSearchParams();
+  const location = useLocation();
 
-  return <Outlet context={[confirmation, setConfirmation]} />;
+  const next = searchParams.get("next") || "/";
+
+  // console.log("searchParams", searchParams);
+  // console.log("location", location);
+
+  if (user) return <Navigate to={next} />;
+
+  return <Outlet context={[next, confirmation, setConfirmation]} />;
 }
 
 export function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [authInput, setAuthInput] = useState("");
   const [status, setStatus] = useState("");
@@ -56,7 +78,7 @@ export function Login() {
   const [phoneCountry, setPhoneCountry] = useState("LR");
   const [isPhoneNumber, setIsPhoneNumber] = useState(false);
 
-  const [confirmation, setConfirmation] = useOutletContext();
+  const [next, confirmation, setConfirmation] = useOutletContext();
 
   useEffect(() => {
     if (authInput.length > 3) {
@@ -98,7 +120,7 @@ export function Login() {
             window.localStorage.setItem("authPhone", phone.number);
             setConfirmation(confirmationResult);
             setStatus("success");
-            navigate("/login/phone");
+            navigate(`/login/phone?next=${next}`);
           })
           .catch((error) => {
             console.log("error", error);
@@ -112,7 +134,7 @@ export function Login() {
       if (isEmail(email)) {
         console.log(process.env.PUBLIC_URL);
         sendSignInLinkToEmail(auth, email, {
-          url: `${window.location.origin}/login/email`,
+          url: `${window.location.origin}/login/email?next=${next}`,
           handleCodeInApp: true,
         })
           .then(() => {
@@ -227,7 +249,7 @@ export function ConfirmPhone() {
   const [loading, setLoading] = useState(false);
   const [code, setCode] = useState("");
 
-  const [confirmation] = useOutletContext();
+  const [next, confirmation] = useOutletContext();
 
   const handlePhoneConfirmation = (code) => {
     if (!code) return;
@@ -247,7 +269,7 @@ export function ConfirmPhone() {
     if (!isValidNumber(window.localStorage.getItem("authPhone")))
       throw new Error("Invalid phone number");
   } catch (error) {
-    return <Navigate to="/login" />;
+    return <Navigate to={`/login/phone?next=${next}`} />;
   }
 
   return loading ? (

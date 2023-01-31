@@ -8,8 +8,6 @@ import { Auth, Login } from "./Auth";
 import Header from "./Header";
 
 function App() {
-  const { user } = useAuthContext();
-
   return (
     <Container id="app">
       <Header />

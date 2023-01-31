@@ -1,5 +1,6 @@
 import { React, createContext, useContext, useEffect, useState } from "react";
 import { Spinner } from "react-bootstrap";
+import { useSearchParams } from "react-router-dom";
 
 import { auth } from "./firebase";
 

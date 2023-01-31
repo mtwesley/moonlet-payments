@@ -108,6 +108,7 @@ const LRD = {
 };
 
 function formatDinero(payment) {
+  console.log(payment);
   return toDecimal(dinero(fromPayment(payment)), ({ value, currency }) =>
     Number(value).toFixed(currency.exponent)
   );
@@ -211,15 +212,14 @@ export function PaymentList() {
   }, [user]);
 
   return loading ? (
-    <></>
-  ) : !payments.length ? (
+    <Spinner animation="border" className="mx-auto my-5" />
+  ) : !payments?.length ? (
     <ErrorElement
       icon={<CircleInformation size="xlarge" />}
       title="No payments"
       message="Payments will appear here when created or assigned to you."
     />
   ) : (
-    // <Spinner animation="border" className="mx-auto my-5" />
     <>
       <h2>{payments.length ? "All Payments" : "No payments"}</h2>
       {payments &&
@@ -463,7 +463,11 @@ export function Payment() {
       onSnapshot(
         doc(db, "payments", params.paymentId),
         (doc) => {
-          setPayment({ id: doc.id, ...doc.data() });
+          if (doc.exists()) {
+            setPayment({ id: doc.id, ...doc.data() });
+          } else {
+            setPayment(null);
+          }
           setLoading(false);
         },
         (error) => console.log(error)
@@ -472,9 +476,14 @@ export function Payment() {
   }, [params.paymentId]);
 
   return loading ? (
-    <></>
+    <Spinner animation="border" className="mx-auto my-5" />
+  ) : !payment ? (
+    <ErrorElement
+      icon={<Alert size="xlarge" />}
+      title="Sorry..."
+      message="Payment unavailable or not found"
+    />
   ) : (
-    // <Spinner animation="border" className="mx-auto my-5" />
     <>
       <h2>{payment.title}</h2>
       <h5 className="text-muted">{payment.description}</h5>

@@ -23,8 +23,9 @@ export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const functions = getFunctions(app);
 
-auth.settings.appVerificationDisabledForTesting = true;
-
-connectAuthEmulator(auth, "http://localhost:9099");
-connectFirestoreEmulator(db, "localhost", 8080);
-connectFunctionsEmulator(functions, "localhost", 5001);
+if (process.env.NODE_ENV === "development") {
+  auth.settings.appVerificationDisabledForTesting = true;
+  connectAuthEmulator(auth, "http://localhost:9099");
+  connectFirestoreEmulator(db, "localhost", 8080);
+  connectFunctionsEmulator(functions, "localhost", 5001);
+}
